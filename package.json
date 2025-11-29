@@ -1,0 +1,17 @@
+{
+  "name": "open-gradebook-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "nodemon": "^3.1.11"
+  },
+  "devDependencies": {}
+}
