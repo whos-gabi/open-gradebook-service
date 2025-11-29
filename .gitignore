@@ -1,3 +1,21 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+coverage
+
+# Environment
+.env
+.env.local
+
+# OS / IDE
+.DS_Store
+*.log
+.vercel
+.cache
+.idea
+.vscode
 # Logs
 logs
 *.log

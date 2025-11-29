@@ -1,4 +1,4 @@
-# School Gradebook API (GraphQL)
+# School Gradebook API 
 
 ![Project Status](https://img.shields.io/badge/status-in%20development-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -25,14 +25,13 @@ This project is built to strictly follow the university requirements:
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack (target)
 
 * **Runtime:** Node.js
-* **API Standard:** GraphQL
-* **Server Framework:** Apollo Server / GraphQL Yoga / Mercurius
-* **Database:** PostgreSQL / MySQL
-* **ORM:** Prisma / TypeORM / Sequelize
-* **Testing:** Jest / Supertest
+* **API Standard:** GraphQL (planned)
+* **Server Framework:** Express (minimal placeholder)
+* **Database/ORM:** Planned (Prisma/TypeORM/etc.)
+* **Testing:** Planned (Jest)
 
 ## 📐 Database Relations Plan
 
@@ -52,12 +51,39 @@ To satisfy the relation requirements:
 
 ### Prerequisites
 * Node.js (v18+)
-...
+* Yarn (Classic) — recommended: enable via Corepack (`corepack enable`)
 
 ### Installation
 
-_TODO_
+1) Install dependencies:
+
+```bash
+corepack enable
+yarn install
+```
+
+2) Start the dev server:
+
+```bash
+yarn dev
+```
+
+Health endpoint: `http://localhost:4000/health`
 
 ## 🧪 Testing
 
-_TODO_
+No tests yet.
+
+## 📂 Project Structure
+
+```
+index.js                  # Minimal Express server (only runnable code)
+auth/                     # JWT, auth helpers (TODO)
+db/                       # ORM/DB setup (TODO)
+graphql/                  # Schema and resolvers (TODO)
+models/                   # Domain models (TODO)
+server/                   # Server composition/wiring (TODO)
+tests/                    # Test files (TODO)
+utils/                    # Utilities (TODO)
+prisma/                   # ORM schemas/migrations (TODO)
+```
