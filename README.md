@@ -62,7 +62,28 @@ corepack enable
 yarn install
 ```
 
-2) Start the dev server:
+2) Configure database & run migrations:
+
+Create a `.env` file in the project root with your PostgreSQL connection string:
+
+```bash
+# .env
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/open_gradebook?schema=public"
+```
+
+Then apply Prisma migrations (and create the database if missing):
+
+```bash
+yarn prisma migrate dev
+```
+
+Optionally generate the Prisma client explicitly:
+
+```bash
+yarn prisma generate
+```
+
+3) Start the dev server:
 
 ```bash
 yarn dev
