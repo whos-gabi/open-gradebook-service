@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { roleMiddleware, ROLES } = require('./auth/roleMiddleware');
+const { registerUser, loginUser } = require('./auth/authService');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -42,6 +43,32 @@ app.get('/reports', roleMiddleware(ROLES.ADMIN, ROLES.TEACHER), (_req, res) => {
   });
 });
 */
+
+app.post('/auth/register', roleMiddleware(ROLES.ADMIN), async (req, res) => {
+  try {
+    const user = await registerUser(req.body);
+    res.status(201).json({ user });
+  } catch (error) {
+    const status = error?.statusCode || 500;
+    const message = error?.statusCode ? error.message : 'Failed to register user';
+    // eslint-disable-next-line no-console
+    console.error('Register route error:', error);
+    res.status(status).json({ error: message });
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  try {
+    const authResponse = await loginUser(req.body);
+    res.json(authResponse);
+  } catch (error) {
+    const status = error?.statusCode || 500;
+    const message = error?.statusCode ? error.message : 'Failed to login';
+    // eslint-disable-next-line no-console
+    console.error('Login route error:', error);
+    res.status(status).json({ error: message });
+  }
+});
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console

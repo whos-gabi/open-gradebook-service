@@ -95,6 +95,30 @@ Health endpoint: `http://localhost:4000/health`
 
 No tests yet.
 
+## 🔐 Auth Routes (WIP API surface)
+
+While the GraphQL layer is still in progress, the service already exposes minimal REST endpoints for authentication and seeding initial users:
+
+- `POST /auth/login` – accepts `{ "username": "...", "password": "..." }` (or `email`) and returns a JWT containing `user_id` and `role_id`. Passwords are hashed with SHA-256 before comparison.
+- `POST /auth/register` – **Admin-only** endpoint protected by `roleMiddleware`. Accepts base user information plus `roleId` (only `2` for Teacher or `3` for Student) and creates the matching entry in the `teachers`/`students` tables via Prisma. Example payload:
+
+```json
+{
+  "username": "student.one",
+  "email": "student.one@example.com",
+  "password": "secret123",
+  "firstName": "Student",
+  "lastName": "One",
+  "roleId": 3,
+  "student": {
+    "classId": 1,
+    "dateOfBirth": "2010-09-01"
+  }
+}
+```
+
+Set the `JWT_SECRET` env variable before starting the server; both the login route and the `roleMiddleware` rely on it for signing and verifying tokens.
+
 ## 📂 Project Structure
 
 ```
