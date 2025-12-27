@@ -10,10 +10,12 @@
     "test": "echo \"No tests yet\" && exit 0"
   },
   "dependencies": {
+    "@prisma/client": "5",
     "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.11"
   },
   "devDependencies": {
-    "prisma": "^7.2.0"
+    "prisma": "5"
   }
 }

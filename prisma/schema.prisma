@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement()) @map("role_id")
+  name  String @unique @db.VarChar(50)
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id           Int      @id @default(autoincrement()) @map("user_id")
+  roleId       Int      @map("role_id")
+  username     String   @unique @db.VarChar(100)
+  email        String   @unique @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  firstName    String   @map("first_name") @db.VarChar(50)
+  lastName     String   @map("last_name") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role    Role     @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  student Student?
+  teacher Teacher?
+
+  @@map("users")
+}
+
+model GradeLevel {
+  id             Int              @id @default(autoincrement()) @map("grade_level_id")
+  numericLevel   Int              @unique @map("numeric_level")
+  name           String?          @db.VarChar(50)
+  classes        Class[]
+  curriculumReqs CurriculumReqs[]
+
+  @@map("grade_levels")
+}
+
+model Subject {
+  id             Int              @id @default(autoincrement()) @map("subject_id")
+  name           String           @unique @db.VarChar(100)
+  code           String?          @unique @db.VarChar(20)
+  curriculumReqs CurriculumReqs[]
+  classCourses   ClassCourse[]
+  grades         Grade[]
+  absences       Absence[]
+
+  @@map("subjects")
+}
+
+model CurriculumReqs {
+  id                   Int @id @default(autoincrement()) @map("req_id")
+  gradeLevelId         Int @map("grade_level_id")
+  subjectId            Int @map("subject_id")
+  requiredHoursPerWeek Int @default(1) @map("required_hours_per_week")
+
+  gradeLevel GradeLevel @relation(fields: [gradeLevelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subject    Subject    @relation(fields: [subjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("curriculum_reqs")
+}
+
+model Teacher {
+  userId         Int       @id @map("user_id")
+  specialization String?   @db.VarChar(100)
+  hireDate       DateTime? @default(now()) @map("hire_date") @db.Date
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  homeroomClasses Class[]       @relation("HomeroomTeacher")
+  courses         ClassCourse[]
+
+  @@map("teachers")
+}
+
+model Class {
+  id                Int     @id @default(autoincrement()) @map("class_id")
+  name              String  @unique @db.VarChar(20)
+  gradeLevelId      Int     @map("grade_level_id")
+  homeroomTeacherId Int?    @map("homeroom_teacher_id")
+  academicYear      String? @default("2023-2024") @map("academic_year") @db.VarChar(9)
+
+  gradeLevel      GradeLevel    @relation(fields: [gradeLevelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  homeroomTeacher Teacher?      @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [userId], onDelete: SetNull, onUpdate: NoAction)
+  students        Student[]
+  classCourses    ClassCourse[]
+
+  @@map("classes")
+}
+
+model Student {
+  userId      Int       @id @map("user_id")
+  classId     Int?      @map("class_id")
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  class    Class?    @relation(fields: [classId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  grades   Grade[]
+  absences Absence[]
+
+  @@map("students")
+}
+
+model ClassCourse {
+  id        Int @id @default(autoincrement()) @map("course_id")
+  classId   Int @map("class_id")
+  subjectId Int @map("subject_id")
+  teacherId Int @map("teacher_id")
+
+  class     Class       @relation(fields: [classId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subject   Subject     @relation(fields: [subjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teacher   Teacher     @relation(fields: [teacherId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  timetable Timetable[]
+
+  @@map("class_courses")
+}
+
+model Timetable {
+  id            Int      @id @default(autoincrement()) @map("timetable_id")
+  classCourseId Int      @map("class_course_id")
+  dayOfWeek     Int      @map("day_of_week") // 1=Monday, 7=Sunday
+  startTime     DateTime @map("start_time") @db.Time
+  endTime       DateTime @map("end_time") @db.Time
+  room          String?  @db.VarChar(20)
+
+  classCourse ClassCourse @relation(fields: [classCourseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  absences    Absence[]
+
+  @@map("timetable")
+}
+
+model Grade {
+  id         BigInt   @id @default(autoincrement()) @map("grade_id")
+  studentId  Int      @map("student_id")
+  subjectId  Int      @map("subject_id")
+  gradeValue Decimal  @map("grade_value") @db.Decimal(4, 2)
+  gradeDate  DateTime @default(now()) @map("grade_date") @db.Date
+  comments   String?  @db.VarChar(255)
+
+  student Student @relation(fields: [studentId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("grades")
+}
+
+model Absence {
+  id          BigInt   @id @default(autoincrement()) @map("absence_id")
+  studentId   Int      @map("student_id")
+  subjectId   Int      @map("subject_id")
+  timetableId Int      @map("timetable_id")
+  absenceDate DateTime @map("absence_date") @db.Date
+  isExcused   Boolean  @default(false) @map("is_excused")
+  reason      String?  @db.VarChar(255)
+
+  student   Student   @relation(fields: [studentId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
+  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@map("absences")
+}
