@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getUserContext, clearUserContext } = require('./contextStore');
 
 const ROLES = Object.freeze({
   ADMIN: 1,
@@ -23,8 +24,9 @@ const roleMiddleware = (...allowedRoles) => {
   const hasRoleRestrictions = allowedRoles.length > 0;
 
   return (req, res, next) => {
+    let token;
     try {
-      const token = getTokenFromRequest(req);
+      token = getTokenFromRequest(req);
       if (!token) {
         return res.status(401).json({ error: 'Missing authorization token' });
       }
@@ -43,6 +45,13 @@ const roleMiddleware = (...allowedRoles) => {
       }
 
       req.user = payload;
+      req.context = req.context || {};
+      req.context.user =
+        getUserContext(token) || {
+          id: payload.user_id,
+          roleId: payload.role_id,
+        };
+      req.context.token = token;
 
       if (hasRoleRestrictions && !allowedRoles.includes(payload.role_id)) {
         return res.status(403).json({ error: 'Insufficient permissions' });
@@ -55,6 +64,7 @@ const roleMiddleware = (...allowedRoles) => {
         error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError';
 
       if (isJwtError) {
+        clearUserContext(token);
         return res.status(401).json({ error: 'Invalid or expired token' });
       }
 

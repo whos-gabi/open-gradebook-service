@@ -1,8 +1,14 @@
 'use strict';
 
 const express = require('express');
+const cors = require('cors');
+const { ApolloServer } = require('@apollo/server');
+const { expressMiddleware } = require('@apollo/server/express4');
 const { roleMiddleware, ROLES } = require('./auth/roleMiddleware');
 const { registerUser, loginUser } = require('./auth/authService');
+const { setUserContext } = require('./auth/contextStore');
+const prisma = require('./lib/client');
+const { typeDefs, resolvers } = require('./graphql/getTeacherClassesSchema');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -60,6 +66,7 @@ app.post('/auth/register', roleMiddleware(ROLES.ADMIN), async (req, res) => {
 app.post('/auth/login', async (req, res) => {
   try {
     const authResponse = await loginUser(req.body);
+    setUserContext(authResponse.token, authResponse.user); // user context for graphql layer
     res.json(authResponse);
   } catch (error) {
     const status = error?.statusCode || 500;
@@ -70,8 +77,44 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const startGraphQLServer = async () => {
+  const apolloServer = new ApolloServer({
+    typeDefs,
+    resolvers,
+  });
+
+  await apolloServer.start();
+
+  app.use(
+    '/graphql',
+    cors(),
+    express.json(),
+    roleMiddleware(ROLES.TEACHER),
+    expressMiddleware(apolloServer, {
+      context: async ({ req }) => {
+        const tokenHeader = req.headers.authorization || req.headers.token || '';
+        const token = tokenHeader.toLowerCase().startsWith('bearer ')
+          ? tokenHeader.slice(7).trim()
+          : tokenHeader || null;
+        
+        return {
+          token,
+          prisma,
+          user: req.context?.user,
+        };
+      },
+    }),
+  );
+
+  app.listen(PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`🚀 Serverul tău rulează la http://localhost:${PORT}/graphql`);
+  });
+};
+
+startGraphQLServer().catch((error) => {
   // eslint-disable-next-line no-console
-  console.log(`Server listening on http://localhost:${PORT}`);
+  console.error('Failed to start GraphQL server', error);
+  process.exit(1);
 });
 

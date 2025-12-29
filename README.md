@@ -117,7 +117,11 @@ While the GraphQL layer is still in progress, the service already exposes minima
 }
 ```
 
-Set the `JWT_SECRET` env variable before starting the server; both the login route and the `roleMiddleware` rely on it for signing and verifying tokens.
+Set the `JWT_SECRET` env variable before starting the server; both the login route and the `roleMiddleware` rely on it for signing and verifying tokens. After a successful login the sanitized user is cached in an in-memory context store keyed by the JWT, so future `/graphql` requests can access the already-fetched user via `req.context.user` after the token is verified by `roleMiddleware`.
+
+## 📊 GraphQL (WIP)
+
+- `POST /graphql` – teacher-only GraphQL endpoint (Apollo Server). Run the `getTeacherClasses` query to receive `{ totalClasses, classes[] }` including grade info, academic year, taught subject, and whether the teacher is the homeroom lead. GraphiQL (Apollo Sandbox) is enabled when `NODE_ENV !== 'production'`.
 
 ## 📂 Project Structure
 
