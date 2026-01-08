@@ -158,3 +158,7 @@ vite.config.ts.timestamp-*
 
 # Dir used for generating mock data
 mock_data_gen/
+# Prisma Test Artifacts
+prisma/schema.test.prisma
+*.db
+*.db-journal
