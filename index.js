@@ -77,7 +77,7 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
-const startGraphQLServer = async () => {
+const startServer = async (port = PORT) => {
   const apolloServer = new ApolloServer({
     schema
   });
@@ -105,15 +105,24 @@ const startGraphQLServer = async () => {
     }),
   );
 
-  app.listen(PORT, () => {
-    // eslint-disable-next-line no-console
-    console.log(`🚀 Serverul tău rulează la http://localhost:${PORT}/graphql`);
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, () => {
+      // eslint-disable-next-line no-console
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`🚀 Serverul tău rulează la http://localhost:${port}/graphql`);
+      }
+      resolve(server);
+    }).on('error', reject);
   });
 };
 
-startGraphQLServer().catch((error) => {
-  // eslint-disable-next-line no-console
-  console.error('Failed to start GraphQL server', error);
-  process.exit(1);
-});
+if (require.main === module) {
+  startServer().catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to start GraphQL server', error);
+    process.exit(1);
+  });
+}
+
+module.exports = { app, startServer };
 

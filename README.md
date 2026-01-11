@@ -93,7 +93,25 @@ Health endpoint: `http://localhost:4000/health`
 
 ## 🧪 Testing
 
-No tests yet.
+This project uses **Jest**, **Supertest**, and **SQLite** for integration testing.
+
+### Prerequisites
+
+- Node.js & npm/yarn
+- Dependencies installed via `yarn install` or `npm install`
+
+### Running Tests
+
+Run all tests:
+```bash
+npm test
+# or
+yarn test
+```
+Watch mode (for development):
+```bash
+npm run test:watch
+```
 
 ## 🔐 Auth Routes (WIP API surface)
 
