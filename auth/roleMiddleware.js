@@ -59,9 +59,13 @@ const roleMiddleware = (...allowedRoles) => {
 
       return next();
     } catch (error) {
-      console.error('Authorization middleware error:', error.message);
       const isJwtError =
         error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError';
+
+      // Suppress expected JWT errors in test environment
+      if (!isJwtError || process.env.NODE_ENV !== 'test') {
+        console.error('Authorization middleware error:', error.message);
+      }
 
       if (isJwtError) {
         clearUserContext(token);

@@ -21,6 +21,9 @@ const resetDb = async () => {
     // Safest is delete from all known models.
     
     await prisma.$transaction([
+        prisma.absence.deleteMany(),
+        prisma.grade.deleteMany(),
+        prisma.timetable.deleteMany(),
         prisma.classCourse.deleteMany(),
         prisma.student.deleteMany(),
         prisma.class.deleteMany(),
