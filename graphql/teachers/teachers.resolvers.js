@@ -1,31 +1,6 @@
-const { ROLES } = require('../auth/roleMiddleware');
+const { ROLES } = require('../../auth/roleMiddleware');
 
-const typeDefs = `
-  type GradeLevel {
-    id: Int
-    name: String
-    numericLevel: Int
-  }
-
-  type TeacherClass {
-    name: String
-    grade: GradeLevel
-    academic_year: String
-    subject: String
-    homeroom_teacher: Boolean
-  }
-
-  type GetTeacherClassesResponse {
-    totalClasses: Int!
-    classes: [TeacherClass!]!
-  }
-
-  type Query {
-    getTeacherClasses: GetTeacherClassesResponse!
-  }
-`;
-
-const resolvers = {
+const teachersResolvers = {
   Query: {
     getTeacherClasses: async (_source, _args, context) => {
       const { prisma, user } = context || {};
@@ -77,8 +52,4 @@ const resolvers = {
   },
 };
 
-module.exports = {
-  typeDefs,
-  resolvers,
-};
-
+module.exports = teachersResolvers;

@@ -1,0 +1,20 @@
+module.exports = `
+  # This is a specific "View Model" for the teacher dashboard
+  type TeacherClass {
+    name: String
+    grade: GradeLevel
+    academic_year: String
+    subject: String
+    homeroom_teacher: Boolean
+  }
+
+  type GetTeacherClassesResponse {
+    totalClasses: Int!
+    classes: [TeacherClass!]!
+  }
+
+  # The base Query type defined in the root schema is extended here
+  type Query {
+    getTeacherClasses: GetTeacherClassesResponse!
+  }
+`;

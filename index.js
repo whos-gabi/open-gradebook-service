@@ -8,7 +8,7 @@ const { roleMiddleware, ROLES } = require('./auth/roleMiddleware');
 const { registerUser, loginUser } = require('./auth/authService');
 const { setUserContext } = require('./auth/contextStore');
 const prisma = require('./lib/client');
-const { typeDefs, resolvers } = require('./graphql/getTeacherClassesSchema');
+const schema = require('./graphql/schema');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -79,8 +79,7 @@ app.post('/auth/login', async (req, res) => {
 
 const startServer = async (port = PORT) => {
   const apolloServer = new ApolloServer({
-    typeDefs,
-    resolvers,
+    schema
   });
 
   await apolloServer.start();
@@ -89,7 +88,7 @@ const startServer = async (port = PORT) => {
     '/graphql',
     cors(),
     express.json(),
-    roleMiddleware(ROLES.TEACHER),
+    roleMiddleware(ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT),
     expressMiddleware(apolloServer, {
       context: async ({ req }) => {
         const tokenHeader = req.headers.authorization || req.headers.token || '';
