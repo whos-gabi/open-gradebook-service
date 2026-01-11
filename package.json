@@ -17,7 +17,9 @@
     "express": "^4.21.1",
     "graphql": "^16.12.0",
     "jsonwebtoken": "^9.0.3",
-    "nodemon": "^3.1.11"
+    "mustache": "^4.2.0",
+    "nodemon": "^3.1.11",
+    "puppeteer": "^24.34.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

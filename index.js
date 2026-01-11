@@ -9,6 +9,7 @@ const { registerUser, loginUser } = require('./auth/authService');
 const { setUserContext } = require('./auth/contextStore');
 const prisma = require('./lib/client');
 const schema = require('./graphql/schema');
+const { exportStudentReport } = require('./lib/student-pdf');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -77,6 +78,12 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+app.get(
+  '/api/export/student/:id',
+  roleMiddleware(ROLES.TEACHER, ROLES.ADMIN),
+  exportStudentReport,
+);
+
 const startServer = async (port = PORT) => {
   const apolloServer = new ApolloServer({
     schema
@@ -88,7 +95,7 @@ const startServer = async (port = PORT) => {
     '/graphql',
     cors(),
     express.json(),
-    roleMiddleware(ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT),
+    roleMiddleware(ROLES.TEACHER),
     expressMiddleware(apolloServer, {
       context: async ({ req }) => {
         const tokenHeader = req.headers.authorization || req.headers.token || '';
@@ -109,7 +116,7 @@ const startServer = async (port = PORT) => {
     const server = app.listen(port, () => {
       // eslint-disable-next-line no-console
       if (process.env.NODE_ENV !== 'test') {
-        console.log(`🚀 Serverul tău rulează la http://localhost:${port}/graphql`);
+        console.log(`🚀 Server up on: http://localhost:${port}/`);
       }
       resolve(server);
     }).on('error', reject);
