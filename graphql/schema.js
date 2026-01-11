@@ -1,21 +1,28 @@
+const fs = require('fs');
+const path = require('path');
+
 const { makeExecutableSchema } = require('@graphql-tools/schema');
 const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
 
+// Helper to load .graphql files
+const loadSchema = (relativePath) => 
+  fs.readFileSync(path.join(__dirname, relativePath), 'utf8');
+
 // --- Import Domains Manually (Cleanest for explicit history) ---
 // 1. Classes Domain
-const classesTypeDefs = require('./classes/classes.schema');
+const classesTypeDefs = loadSchema('./classes/classes.graphql');
 const classesResolvers = require('./classes/classes.resolvers');
 
 // 2. Teachers Domain
-const teachersTypeDefs = require('./teachers/teachers.schema');
+const teachersTypeDefs = loadSchema('./teachers/teachers.graphql');
 const teachersResolvers = require('./teachers/teachers.resolvers');
 
 // 3. Users Domain
-const usersTypeDefs = require('./users/users.schema');
+const usersTypeDefs = loadSchema('./users/users.graphql');
 const usersResolvers = require('./users/users.resolvers');
 
 // 3. Courses Domain (Your new assignment logic)
-const coursesTypeDefs = require('./courses/courses.schema');
+const coursesTypeDefs = loadSchema('./courses/courses.graphql');
 const coursesResolvers = require('./courses/courses.resolvers');
 
 // --- Base Definition (The "Root" types) ---

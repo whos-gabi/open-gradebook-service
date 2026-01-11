@@ -1,5 +1,4 @@
-module.exports = `
-  type User {
+ type User {
     id: Int!
     firstName: String
     lastName: String
@@ -14,4 +13,3 @@ module.exports = `
     # For admins
     getAllUsers: [User!]!
   }
-`;
