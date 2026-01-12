@@ -21,9 +21,13 @@ const teachersResolvers = require('./teachers/teachers.resolvers');
 const usersTypeDefs = loadSchema('./users/users.graphql');
 const usersResolvers = require('./users/users.resolvers');
 
-// 3. Courses Domain (Your new assignment logic)
+// 4. Courses Domain (Your new assignment logic)
 const coursesTypeDefs = loadSchema('./courses/courses.graphql');
 const coursesResolvers = require('./courses/courses.resolvers');
+
+// 5. Grades Domain (With real-time subscriptions)
+const gradesTypeDefs = loadSchema('./grades/grades.graphql');
+const gradesResolvers = require('./grades/grades.resolvers');
 
 // --- Base Definition (The "Root" types) ---
 const rootTypeDefs = `
@@ -31,6 +35,9 @@ const rootTypeDefs = `
     _empty: String
   }
   type Mutation {
+    _empty: String
+  }
+  type Subscription {
     _empty: String
   }
 `;
@@ -41,14 +48,16 @@ const typeDefs = mergeTypeDefs([
   classesTypeDefs,
   teachersTypeDefs,
   usersTypeDefs,
-  coursesTypeDefs
+  coursesTypeDefs,
+  gradesTypeDefs
 ]);
 
 const resolvers = mergeResolvers([
   classesResolvers,
   teachersResolvers,
   usersResolvers,
-  coursesResolvers
+  coursesResolvers,
+  gradesResolvers
 ]);
 
 const schema = makeExecutableSchema({
