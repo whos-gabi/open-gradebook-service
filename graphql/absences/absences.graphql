@@ -1,0 +1,15 @@
+type Absence {
+  id: Int!
+  date: String!
+  studentId: Int!
+  timetableId: Int!
+  isExcused: Boolean
+  reason: String
+  student: Student
+  timetable: Timetable
+  subject: Subject
+}
+
+extend type Mutation {
+  markAbsence(studentId: Int!, timetableId: Int!, date: String!, reason: String, isExcused: Boolean): Absence!
+}

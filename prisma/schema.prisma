@@ -49,7 +49,7 @@ model Subject {
   curriculumReqs CurriculumReqs[]
   classCourses   ClassCourse[]
   grades         Grade[]
-  absences       Absence[]
+  timetables     Timetable[]
 
   @@map("subjects")
 }
@@ -89,6 +89,7 @@ model Class {
   homeroomTeacher Teacher?      @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [userId], onDelete: SetNull, onUpdate: NoAction)
   students        Student[]
   classCourses    ClassCourse[]
+  timetables      Timetable[]
 
   @@map("classes")
 }
@@ -115,21 +116,23 @@ model ClassCourse {
   class     Class       @relation(fields: [classId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   subject   Subject     @relation(fields: [subjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   teacher   Teacher     @relation(fields: [teacherId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
-  timetable Timetable[]
+  // timetable relation removed as Timetable now links directly to Class/Subject
+
 
   @@map("class_courses")
 }
 
 model Timetable {
-  id            Int      @id @default(autoincrement()) @map("timetable_id")
-  classCourseId Int      @map("class_course_id")
-  dayOfWeek     Int      @map("day_of_week") // 1=Monday, 7=Sunday
-  startTime     DateTime @map("start_time") @db.Time
-  endTime       DateTime @map("end_time") @db.Time
-  room          String?  @db.VarChar(20)
+  id        Int      @id @default(autoincrement()) @map("timetable_id")
+  dayOfWeek Int      @map("day_of_week")
+  startTime DateTime @map("start_time") @db.Time
+  endTime   DateTime @map("end_time") @db.Time
+  classId   Int      @map("class_id")
+  subjectId Int      @map("subject_id")
 
-  classCourse ClassCourse @relation(fields: [classCourseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  absences    Absence[]
+  class    Class     @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subject  Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  absences Absence[]
 
   @@map("timetable")
 }
@@ -149,17 +152,16 @@ model Grade {
 }
 
 model Absence {
-  id          BigInt   @id @default(autoincrement()) @map("absence_id")
+  id          Int      @id @default(autoincrement()) @map("absence_id")
+  date        DateTime @map("absence_date") @db.Date
   studentId   Int      @map("student_id")
-  subjectId   Int      @map("subject_id")
   timetableId Int      @map("timetable_id")
-  absenceDate DateTime @map("absence_date") @db.Date
+  
   isExcused   Boolean  @default(false) @map("is_excused")
   reason      String?  @db.VarChar(255)
 
   student   Student   @relation(fields: [studentId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
-  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("absences")
 }

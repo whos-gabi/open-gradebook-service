@@ -29,6 +29,14 @@ const teachersResolvers = require('./teachers/teachers.resolvers');
 const studentsTypeDefs = loadSchema('./students/students.graphql');
 const studentsResolvers = require('./students/students.resolvers');
 
+// 6. Timetable Domain
+const timetableTypeDefs = loadSchema('./timetable/timetable.graphql');
+const timetableResolvers = require('./timetable/timetable.resolvers');
+
+// 7. Absences Domain
+const absencesTypeDefs = loadSchema('./absences/absences.graphql');
+const absencesResolvers = require('./absences/absences.resolvers');
+
 // --- Base Definition (The "Root" types) ---
 const rootTypeDefs = `
   type Query {
@@ -46,7 +54,9 @@ const typeDefs = mergeTypeDefs([
   coursesTypeDefs,
   usersTypeDefs,
   teachersTypeDefs,
-  studentsTypeDefs
+  studentsTypeDefs,
+  timetableTypeDefs,
+  absencesTypeDefs
 ]);
 
 const resolvers = mergeResolvers([
@@ -54,7 +64,9 @@ const resolvers = mergeResolvers([
   coursesResolvers,
   usersResolvers,
   teachersResolvers,
-  studentsResolvers
+  studentsResolvers,
+  timetableResolvers,
+  absencesResolvers
 ]);
 
 const schema = makeExecutableSchema({
