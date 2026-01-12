@@ -8,22 +8,26 @@ const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
 const loadSchema = (relativePath) => 
   fs.readFileSync(path.join(__dirname, relativePath), 'utf8');
 
-// --- Import Domains Manually (Cleanest for explicit history) ---
+// Import Domains Manually
 // 1. Classes Domain
 const classesTypeDefs = loadSchema('./classes/classes.graphql');
 const classesResolvers = require('./classes/classes.resolvers');
 
-// 2. Teachers Domain
-const teachersTypeDefs = loadSchema('./teachers/teachers.graphql');
-const teachersResolvers = require('./teachers/teachers.resolvers');
+// 2. Courses Domain
+const coursesTypeDefs = loadSchema('./courses/courses.graphql');
+const coursesResolvers = require('./courses/courses.resolvers');
 
 // 3. Users Domain
 const usersTypeDefs = loadSchema('./users/users.graphql');
 const usersResolvers = require('./users/users.resolvers');
 
-// 3. Courses Domain (Your new assignment logic)
-const coursesTypeDefs = loadSchema('./courses/courses.graphql');
-const coursesResolvers = require('./courses/courses.resolvers');
+// 4. Teachers Domain
+const teachersTypeDefs = loadSchema('./teachers/teachers.graphql');
+const teachersResolvers = require('./teachers/teachers.resolvers');
+
+// 5. Students Domain
+const studentsTypeDefs = loadSchema('./students/students.graphql');
+const studentsResolvers = require('./students/students.resolvers');
 
 // --- Base Definition (The "Root" types) ---
 const rootTypeDefs = `
@@ -39,16 +43,18 @@ const rootTypeDefs = `
 const typeDefs = mergeTypeDefs([
   rootTypeDefs,
   classesTypeDefs,
-  teachersTypeDefs,
+  coursesTypeDefs,
   usersTypeDefs,
-  coursesTypeDefs
+  teachersTypeDefs,
+  studentsTypeDefs
 ]);
 
 const resolvers = mergeResolvers([
   classesResolvers,
-  teachersResolvers,
+  coursesResolvers,
   usersResolvers,
-  coursesResolvers
+  teachersResolvers,
+  studentsResolvers
 ]);
 
 const schema = makeExecutableSchema({
