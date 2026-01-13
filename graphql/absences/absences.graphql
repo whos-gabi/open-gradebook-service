@@ -10,6 +10,11 @@ type Absence {
   subject: Subject
 }
 
+extend type Query {
+  myAbsences: [Absence!]!
+}
+
 extend type Mutation {
   markAbsence(studentId: Int!, timetableId: Int!, date: String!, reason: String, isExcused: Boolean): Absence!
+  excuseAbsence(absenceId: ID!, reason: String): Absence
 }
