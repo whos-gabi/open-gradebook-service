@@ -1,0 +1,26 @@
+scalar Date
+
+type Grade {
+  id: Int!
+  value: Float!
+  date: String
+  comments: String
+  student: Student!
+  subject: Subject!
+}
+
+input GradeInput {
+  value: Float!       
+  studentId: Int!    
+  subjectId: Int!    
+  comments: String    
+}
+
+type Mutation {
+  # Instead of listing (value: Float, studentId: Int...), we use the single object
+  addGrade(input: GradeInput!): Grade!
+}
+
+type Query {
+  myGrades: [Grade!]!
+}
