@@ -1,0 +1,10 @@
+type Student {
+  id: Int!
+  user: User! # Assuming students links to a User profile
+  # Add other student-specific fields from your DB schema here
+}
+
+type Query {
+  # REQUIREMENT: Offset-based pagination arguments
+  students(skip: Int, take: Int): [Student!]!
+}

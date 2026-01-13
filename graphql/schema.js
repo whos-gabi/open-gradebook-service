@@ -8,22 +8,30 @@ const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
 const loadSchema = (relativePath) => 
   fs.readFileSync(path.join(__dirname, relativePath), 'utf8');
 
-// --- Import Domains Manually (Cleanest for explicit history) ---
+// Import Domains Manually
 // 1. Classes Domain
-const classesTypeDefs = loadSchema('./classes/classes.graphql');
+const classesTypeDefs = fs.readFileSync(path.join(__dirname, 'classes', 'classes.graphql'), 'utf8' );
 const classesResolvers = require('./classes/classes.resolvers');
 
-// 2. Teachers Domain
-const teachersTypeDefs = loadSchema('./teachers/teachers.graphql');
-const teachersResolvers = require('./teachers/teachers.resolvers');
+// 2. Courses Domain
+const coursesTypeDefs = fs.readFileSync(path.join(__dirname, 'courses', 'courses.graphql'), 'utf8' );
+const coursesResolvers = require('./courses/courses.resolvers');
 
 // 3. Users Domain
-const usersTypeDefs = loadSchema('./users/users.graphql');
+const usersTypeDefs = fs.readFileSync(path.join(__dirname, 'users', 'users.graphql'), 'utf8' );
 const usersResolvers = require('./users/users.resolvers');
 
-// 4. Courses Domain (Your new assignment logic)
-const coursesTypeDefs = loadSchema('./courses/courses.graphql');
-const coursesResolvers = require('./courses/courses.resolvers');
+// 4. Teachers Domain
+const teachersTypeDefs = fs.readFileSync(path.join(__dirname,  'teachers', 'teachers.graphql'), 'utf8' );
+const teachersResolvers = require('./teachers/teachers.resolvers');
+
+// 5. Students Domain
+const studentsTypeDefs = fs.readFileSync(path.join(__dirname, 'students', 'students.graphql'), 'utf8');
+const studentsResolvers = require('./students/students.resolvers');
+
+// 6. Grades Domain
+const gradesTypeDefs = fs.readFileSync(path.join(__dirname, 'grades', 'grades.graphql'), 'utf8');
+const gradesResolvers = require('./grades/grades.resolvers');
 
 // 5. Grades Domain (With real-time subscriptions)
 const gradesTypeDefs = loadSchema('./grades/grades.graphql');
@@ -46,17 +54,19 @@ const rootTypeDefs = `
 const typeDefs = mergeTypeDefs([
   rootTypeDefs,
   classesTypeDefs,
-  teachersTypeDefs,
-  usersTypeDefs,
   coursesTypeDefs,
+  usersTypeDefs,
+  teachersTypeDefs,
+  studentsTypeDefs,
   gradesTypeDefs
 ]);
 
 const resolvers = mergeResolvers([
   classesResolvers,
-  teachersResolvers,
-  usersResolvers,
   coursesResolvers,
+  usersResolvers,
+  teachersResolvers,
+  studentsResolvers,
   gradesResolvers
 ]);
 

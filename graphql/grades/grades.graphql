@@ -1,44 +1,26 @@
+scalar Date
+
 type Grade {
   id: Int!
-  studentId: Int!
-  subjectId: Int!
-  gradeValue: Float!
-  gradeDate: String!
+  value: Float!
+  date: String
   comments: String
-  student: User
-  subject: Subject
+  student: Student!
+  subject: Subject!
 }
 
-input AddGradeInput {
-  studentId: Int!
-  subjectId: Int!
-  gradeValue: Float!
-  comments: String
-}
-
-type Query {
-  """
-  Get all grades for a specific student.
-  Teachers can query any student's grades.
-  Students can only query their own grades.
-  """
-  getStudentGrades(studentId: Int!): [Grade!]!
+input GradeInput {
+  value: Float!       
+  studentId: Int!    
+  subjectId: Int!    
+  comments: String    
 }
 
 type Mutation {
-  """
-  Add a new grade for a student.
-  Only teachers can add grades.
-  After creation, publishes a real-time event to the student.
-  """
-  addGrade(input: AddGradeInput!): Grade!
+  # Instead of listing (value: Float, studentId: Int...), we use the single object
+  addGrade(input: GradeInput!): Grade!
 }
 
-type Subscription {
-  """
-  Subscribe to real-time grade notifications.
-  Each student receives only their own grades via dynamic channel.
-  Requires authenticated WebSocket connection.
-  """
-  gradeAdded(studentId: Int!): Grade!
+type Query {
+  myGrades: [Grade!]!
 }

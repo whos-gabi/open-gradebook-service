@@ -194,6 +194,7 @@ const startServer = async (port = PORT) => {
     '/graphql',
     cors(),
     express.json(),
+    roleMiddleware(ROLES.TEACHER, ROLES.ADMIN, ROLES.STUDENT),
     expressMiddleware(apolloServer, {
       context: async ({ req }) => {
         const tokenHeader = req.headers.authorization || req.headers.token || '';

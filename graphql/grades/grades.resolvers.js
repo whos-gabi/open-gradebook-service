@@ -1,135 +1,98 @@
-'use strict';
-
 const { ROLES } = require('../../auth/roleMiddleware');
-const { pubsub, EVENTS } = require('../../lib/pubsub');
-
-/**
- * Helper to format a grade record for GraphQL response
- */
-const formatGrade = (grade) => ({
-  id: Number(grade.id),
-  studentId: grade.studentId,
-  subjectId: grade.subjectId,
-  gradeValue: parseFloat(grade.gradeValue),
-  gradeDate: grade.gradeDate.toISOString().split('T')[0],
-  comments: grade.comments,
-  student: grade.student?.user || null,
-  subject: grade.subject || null,
-});
 
 const gradesResolvers = {
-  Query: {
-    getStudentGrades: async (_source, { studentId }, context) => {
-      const { prisma, user } = context;
-
-      if (!user?.id) {
-        throw new Error('Unauthorized');
-      }
-
-      // Teachers can view any student's grades
-      // Students can only view their own grades
-      if (user.roleId === ROLES.STUDENT && user.id !== studentId) {
-        throw new Error('Forbidden: You can only view your own grades');
-      }
-
-      const grades = await prisma.grade.findMany({
-        where: { studentId },
-        include: {
-          student: {
-            include: { user: true },
-          },
-          subject: true,
-        },
-        orderBy: { gradeDate: 'desc' },
-      });
-
-      return grades.map(formatGrade);
-    },
-  },
-
   Mutation: {
-    addGrade: async (_source, { input }, context) => {
+    addGrade: async (_parent, { input }, context) => {
       const { prisma, user } = context;
 
-      // Only teachers can add grades
-      if (!user?.id || user.roleId !== ROLES.TEACHER) {
+      if (!user || user.roleId !== ROLES.TEACHER) {
         throw new Error('Forbidden: Only teachers can add grades');
       }
 
-      const { studentId, subjectId, gradeValue, comments } = input;
+      const { value, studentId, subjectId, comments } = input;
 
-      // Verify student exists
+      // Does teacher teach this student?
       const student = await prisma.student.findUnique({
         where: { userId: studentId },
+        include: { class: true }
       });
 
-      if (!student) {
-        throw new Error(`Student with ID ${studentId} not found`);
-      }
+      if (!student) throw new Error('Student not found');
 
-      // Verify subject exists
-      const subject = await prisma.subject.findUnique({
-        where: { id: subjectId },
+      const assignment = await prisma.classCourse.findFirst({
+        where: {
+          classId: student.classId,
+          subjectId: subjectId,
+          teacherId: user.id
+        }
       });
 
-      if (!subject) {
-        throw new Error(`Subject with ID ${subjectId} not found`);
+      if (!assignment) {
+        throw new Error('Unauthorized: You do not teach this subject to this class.');
       }
 
-      // Create the grade
       const newGrade = await prisma.grade.create({
         data: {
-          studentId,
-          subjectId,
-          gradeValue,
-          comments: comments || null,
+          gradeValue: value,
+          gradeDate: new Date(),
+          comments: comments,
+          // Connect Student (using userId as discovered previously)
+          student: { connect: { userId: studentId } },
+          // Connect Subject
+          subject: { connect: { id: subjectId } }
         },
         include: {
-          student: {
-            include: { user: true },
-          },
-          subject: true,
-        },
+          student: { include: { user: true } },
+          subject: true
+        }
       });
 
-      const formattedGrade = formatGrade(newGrade);
+      // Since DB didn't return a teacher, we attach the current user 
+      // so the GraphQL return type (Grade.teacher) is satisfied.
+      return {
+        ...newGrade,
+        id: Number(newGrade.id), // Ensure BigInt is converted to Number immediately
+        teacher: user 
+      };
+    }
+  },
 
-      // Publish event to the student-specific channel for real-time notification
-      // CRITICAL: Dynamic channel ensures privacy - Student A never receives Student B's grades
-      const channelName = `${EVENTS.GRADE_ADDED}_${studentId}`;
-      
-      await pubsub.publish(channelName, {
-        gradeAdded: formattedGrade,
+  Query: {
+    myGrades: async (_parent, _args, context) => {
+
+      const { prisma, user } = context;
+      if (!user || user.roleId !== ROLES.STUDENT) throw new Error('Forbidden');
+
+      const studentProfile = await prisma.student.findUnique({
+        where: { userId: user.id }
       });
 
-      return formattedGrade;
-    },
+      if (!studentProfile) throw new Error('Student profile not found');
+
+      // Optimization: Fetch grades AND pre-load relation data to avoid N+1 problem.
+      return await prisma.grade.findMany({
+        where: { studentId: studentProfile.id },
+        include: { subject: true } 
+      });
+    }
   },
 
-  Subscription: {
-    gradeAdded: {
-      // Subscribe to the student-specific channel
-      // This ensures each student only receives their own grade notifications
-      subscribe: (_source, { studentId }, context) => {
-        const { user } = context;
-
-        // Validate that user is authenticated via WebSocket
-        if (!user?.id) {
-          throw new Error('Unauthorized: Authentication required for subscriptions');
-        }
-
-        // Students can only subscribe to their own grades
-        // Teachers/Admins can subscribe to any student's grades (for monitoring)
-        if (user.roleId === ROLES.STUDENT && user.id !== studentId) {
-          throw new Error('Forbidden: You can only subscribe to your own grades');
-        }
-
-        // Return async iterator for the student-specific channel
-        const channelName = `${EVENTS.GRADE_ADDED}_${studentId}`;
-        return pubsub.asyncIterator([channelName]);
-      },
+  Grade: {
+    // Handling BigInt to Number conversion as Prisma returns BigInt for keys defined as BigInt
+    id: (parent) => {
+        const id = parent.id || parent.gradeId || parent.grade_id;
+        return typeof id === 'bigint' ? Number(id) : id;
     },
-  },
+    value: (parent) => {
+       const val = parent.gradeValue || parent.grade_value;
+       // Handle Decimal to Number conversion
+       return (val && typeof val.toNumber === 'function') ? val.toNumber() : val;
+    },
+    date: (parent) => {
+       const d = parent.gradeDate || parent.grade_date;
+       return d ? new Date(d).toISOString() : null;
+    }
+  }
 };
 
 module.exports = gradesResolvers;
