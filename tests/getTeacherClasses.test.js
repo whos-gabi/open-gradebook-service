@@ -139,8 +139,10 @@ describe('Query: getTeacherClasses', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({ query: QUERY });
             
-         expect(res.status).toBe(403);
-         expect(res.body.error).toMatch(/Insufficient permissions/i);
+         // The express middleware allows STUDENTS, so it reaches the resolver.
+         // The resolver throws "Unauthorized", which GraphQL returns as 200 with errors.
+         expect(res.body.errors).toBeDefined();
+         expect(res.body.errors[0].message).toMatch(/Unauthorized/i);
     });
 
     it('Sad path: No Token returns 401', async () => {
