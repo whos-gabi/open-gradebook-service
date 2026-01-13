@@ -7,7 +7,7 @@ const resolvers = {
         data: {
           studentId,
           timetableId,
-          date: new Date(date), // ISO String to Date
+          date: new Date(date), 
           reason,
           isExcused: isExcused || false
         }
@@ -15,21 +15,27 @@ const resolvers = {
     }
   },
   Absence: {
-    date: (parent) => parent.date.toISOString().split('T')[0], // Return YYYY-MM-DD
+    date: (parent) => {
+        if (!parent.date) return null;
+        return parent.date instanceof Date 
+            ? parent.date.toISOString().split('T')[0] 
+            : parent.date;
+    },
+    
     student: async (parent) => {
       return await prisma.student.findUnique({
-        where: { userId: parent.studentId }
+        where: { userId: parent.studentId },
+        include: { user: true } 
       });
     },
+
     timetable: async (parent) => {
       return await prisma.timetable.findUnique({
         where: { id: parent.timetableId }
       });
     },
+
     subject: async (parent) => {
-      // Navigate: Absence -> Timetable -> Subject
-      // We can do this efficiently by including relation in findUnique if we had context, 
-      // but here we just fetch.
       const timetable = await prisma.timetable.findUnique({
         where: { id: parent.timetableId },
         include: { subject: true }
