@@ -1,4 +1,10 @@
 const studentsResolvers = {
+  // Add a dedicated Student resolver to handle the ID mapping across the board
+  Student: {
+    id: (parent) => parent.id || parent.userId,
+    user: (parent) => parent.user
+  },
+
   Query: {
     students: async (_parent, { skip, take }, context) => {
       const { prisma } = context;
@@ -11,14 +17,8 @@ const studentsResolvers = {
         }
       });
 
-      // FIX: Map the database result to match GraphQL schema
-      return studentsData.map(student => ({
-        // 1. Map the ID. 
-         id: student.userId, 
-        
-        // 2. Pass the rest of the user data
-        user: student.user
-      }));
+      // FIX: Return raw data and let the Student: { } resolver handle mapping
+      return studentsData;
     }
   }
 };
