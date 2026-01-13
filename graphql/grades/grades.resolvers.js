@@ -1,4 +1,9 @@
 const { ROLES } = require('../../auth/roleMiddleware');
+const { PubSub, withFilter } = require('graphql-subscriptions');
+const { publishGradeNotification } = require('../../lib/gradeNotificationHub');
+
+const pubsub = new PubSub();
+const GRADE_ADDED = 'GRADE_ADDED';
 
 const gradesResolvers = {
   Mutation: {
@@ -49,11 +54,20 @@ const gradesResolvers = {
 
       // Since DB didn't return a teacher, we attach the current user 
       // so the GraphQL return type (Grade.teacher) is satisfied.
-      return {
+      const result = {
         ...newGrade,
         id: Number(newGrade.id), // Ensure BigInt is converted to Number immediately
         teacher: user 
       };
+
+      // Publish grade notification (GraphQL subscription + plain WS)
+      pubsub.publish(GRADE_ADDED, {
+        myGradeAdded: result,
+        studentId,
+      });
+      publishGradeNotification(studentId, result);
+
+      return result;
     }
   },
 
@@ -75,6 +89,22 @@ const gradesResolvers = {
         include: { subject: true } 
       });
     }
+  },
+
+  Subscription: {
+    myGradeAdded: {
+      subscribe: withFilter(
+        () => pubsub.asyncIterator([GRADE_ADDED]),
+        (payload, _variables, context) => {
+          // Student-only; deliver only to the student that received the grade
+          return (
+            context?.user?.roleId === ROLES.STUDENT &&
+            payload?.studentId === context.user.id
+          );
+        },
+      ),
+      resolve: (payload) => payload.myGradeAdded,
+    },
   },
 
   Grade: {

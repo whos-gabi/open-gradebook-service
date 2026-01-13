@@ -4,7 +4,7 @@ const usersResolvers = {
       const { prisma, user } = context;
       if (!user?.id) return null;
       
-      return prisma.users.findUnique({
+      return prisma.user.findUnique({
         where: { id: user.id },
         include: { role: true } // Fetch role immediately for 'me'
       });
@@ -12,7 +12,7 @@ const usersResolvers = {
 
     getAllUsers: async (_source, _args, context) => {
       const { prisma } = context;
-      return prisma.users.findMany({
+      return prisma.user.findMany({
         include: { role: true }
       });
     }
@@ -31,14 +31,17 @@ const usersResolvers = {
       }
 
       // Case B: Fallback fetch (Prevents crashes, solves "blind ID" issues)
-      if (parent.role_id) {
-        const roleData = await context.prisma.roles.findUnique({
-          where: { id: parent.role_id }
+      // Prisma field is `roleId` (but we also accept legacy `role_id` if present)
+      const roleId = parent.roleId ?? parent.role_id;
+      if (typeof roleId !== 'undefined' && roleId !== null) {
+        const roleData = await context.prisma.role.findUnique({
+          where: { id: roleId }
         });
-        return roleData ? roleData.name : null;
+        return roleData?.name || 'UNKNOWN';
       }
 
-      return null;
+      // Schema declares role: String! so never return null
+      return 'UNKNOWN';
     }
   }
 };

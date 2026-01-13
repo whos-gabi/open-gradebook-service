@@ -4,40 +4,46 @@ const path = require('path');
 const { makeExecutableSchema } = require('@graphql-tools/schema');
 const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
 
-// Helper to load .graphql files
-const loadSchema = (relativePath) => 
+const loadSchema = (relativePath) =>
   fs.readFileSync(path.join(__dirname, relativePath), 'utf8');
 
-// Import Domains Manually
-// 1. Classes Domain
-const classesTypeDefs = fs.readFileSync(path.join(__dirname, 'classes', 'classes.graphql'), 'utf8' );
-const classesResolvers = require('./classes/classes.resolvers');
+// --- Domain SDL + Resolvers ---
+const domains = [
+  {
+    typeDefs: loadSchema('classes/classes.graphql'),
+    resolvers: require('./classes/classes.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('courses/courses.graphql'),
+    resolvers: require('./courses/courses.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('users/users.graphql'),
+    resolvers: require('./users/users.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('teachers/teachers.graphql'),
+    resolvers: require('./teachers/teachers.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('students/students.graphql'),
+    resolvers: require('./students/students.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('grades/grades.graphql'),
+    resolvers: require('./grades/grades.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('timetable/timetable.graphql'),
+    resolvers: require('./timetable/timetable.resolvers'),
+  },
+  {
+    typeDefs: loadSchema('absences/absences.graphql'),
+    resolvers: require('./absences/absences.resolvers'),
+  },
+];
 
-// 2. Courses Domain
-const coursesTypeDefs = fs.readFileSync(path.join(__dirname, 'courses', 'courses.graphql'), 'utf8' );
-const coursesResolvers = require('./courses/courses.resolvers');
-
-// 3. Users Domain
-const usersTypeDefs = fs.readFileSync(path.join(__dirname, 'users', 'users.graphql'), 'utf8' );
-const usersResolvers = require('./users/users.resolvers');
-
-// 4. Teachers Domain
-const teachersTypeDefs = fs.readFileSync(path.join(__dirname,  'teachers', 'teachers.graphql'), 'utf8' );
-const teachersResolvers = require('./teachers/teachers.resolvers');
-
-// 5. Students Domain
-const studentsTypeDefs = fs.readFileSync(path.join(__dirname, 'students', 'students.graphql'), 'utf8');
-const studentsResolvers = require('./students/students.resolvers');
-
-// 6. Grades Domain
-const gradesTypeDefs = fs.readFileSync(path.join(__dirname, 'grades', 'grades.graphql'), 'utf8');
-const gradesResolvers = require('./grades/grades.resolvers');
-
-// 5. Grades Domain (With real-time subscriptions)
-const gradesTypeDefs = loadSchema('./grades/grades.graphql');
-const gradesResolvers = require('./grades/grades.resolvers');
-
-// --- Base Definition (The "Root" types) ---
+// --- Base Definition (Root types) ---
 const rootTypeDefs = `
   type Query {
     _empty: String
@@ -50,29 +56,10 @@ const rootTypeDefs = `
   }
 `;
 
-// --- Merge ---
-const typeDefs = mergeTypeDefs([
-  rootTypeDefs,
-  classesTypeDefs,
-  coursesTypeDefs,
-  usersTypeDefs,
-  teachersTypeDefs,
-  studentsTypeDefs,
-  gradesTypeDefs
-]);
+const typeDefs = mergeTypeDefs([rootTypeDefs, ...domains.map((d) => d.typeDefs)]);
+const resolvers = mergeResolvers(domains.map((d) => d.resolvers));
 
-const resolvers = mergeResolvers([
-  classesResolvers,
-  coursesResolvers,
-  usersResolvers,
-  teachersResolvers,
-  studentsResolvers,
-  gradesResolvers
-]);
-
-const schema = makeExecutableSchema({
+module.exports = makeExecutableSchema({
   typeDefs,
   resolvers,
 });
-
-module.exports = schema;

@@ -24,3 +24,8 @@ type Mutation {
 type Query {
   myGrades: [Grade!]!
 }
+
+type Subscription {
+  # Student-only subscription. No args: student is inferred from JWT in the WebSocket connection.
+  myGradeAdded: Grade!
+}

@@ -10,6 +10,7 @@ const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/dra
 const { WebSocketServer } = require('ws');
 const { useServer } = require('graphql-ws/use/ws');
 const { roleMiddleware, ROLES } = require('./auth/roleMiddleware');
+const { registerStudentSocket, unregisterStudentSocket } = require('./lib/gradeNotificationHub');
 const { registerUser, loginUser } = require('./auth/authService');
 const { setUserContext } = require('./auth/contextStore');
 const prisma = require('./lib/client');
@@ -119,10 +120,74 @@ const startServer = async (port = PORT) => {
   // Create HTTP server for both Express and WebSocket
   const httpServer = http.createServer(app);
 
-  // Create WebSocket server for GraphQL subscriptions
-  const wsServer = new WebSocketServer({
-    server: httpServer,
-    path: '/graphql',
+  // IMPORTANT:
+  // We use `noServer: true` and manually route upgrades.
+  // Having multiple WebSocketServer({ server: httpServer, path }) instances can cause 400s because
+  // the "wrong" ws server may respond to the upgrade before the correct one sees it.
+  const wsServer = new WebSocketServer({ noServer: true });
+
+  // Plain WebSocket server for "one-message login then auto notifications"
+  // Client sends: { "token": "Bearer <JWT>" } and then receives grade events automatically.
+  const notificationsServer = new WebSocketServer({ noServer: true });
+
+  notificationsServer.on('connection', (socket) => {
+    let authenticatedStudentId = null;
+
+    socket.once('message', (raw) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        const token = msg?.Authorization || msg?.authorization || msg?.token;
+
+        const user = validateToken(token || '');
+        if (!user) {
+          socket.send(JSON.stringify({ type: 'error', message: 'Invalid or expired token' }));
+          return socket.close();
+        }
+        if (user.roleId !== ROLES.STUDENT) {
+          socket.send(JSON.stringify({ type: 'error', message: 'Forbidden: Student only' }));
+          return socket.close();
+        }
+
+        authenticatedStudentId = user.id;
+        registerStudentSocket(authenticatedStudentId, socket);
+        socket.send(JSON.stringify({ type: 'ok', message: 'Subscribed to grade notifications' }));
+      } catch (e) {
+        socket.send(JSON.stringify({ type: 'error', message: 'Bad JSON message' }));
+        socket.close();
+      }
+    });
+
+    socket.on('close', () => {
+      if (authenticatedStudentId) {
+        unregisterStudentSocket(authenticatedStudentId);
+      }
+    });
+  });
+
+  // Route WebSocket upgrades based on path
+  httpServer.on('upgrade', (req, socket, head) => {
+    try {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const pathname = url.pathname;
+
+      if (pathname === '/graphql') {
+        wsServer.handleUpgrade(req, socket, head, (ws) => {
+          wsServer.emit('connection', ws, req);
+        });
+        return;
+      }
+
+      if (pathname === '/ws/grades') {
+        notificationsServer.handleUpgrade(req, socket, head, (ws) => {
+          notificationsServer.emit('connection', ws, req);
+        });
+        return;
+      }
+
+      socket.destroy();
+    } catch (_e) {
+      socket.destroy();
+    }
   });
 
   // Set up WebSocket server with graphql-ws
