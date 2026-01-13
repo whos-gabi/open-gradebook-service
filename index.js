@@ -1,9 +1,14 @@
 'use strict';
 
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { ApolloServer } = require('@apollo/server');
 const { expressMiddleware } = require('@apollo/server/express4');
+const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/drainHttpServer');
+const { WebSocketServer } = require('ws');
+const { useServer } = require('graphql-ws/use/ws');
 const { roleMiddleware, ROLES } = require('./auth/roleMiddleware');
 const { registerUser, loginUser } = require('./auth/authService');
 const { setUserContext } = require('./auth/contextStore');
@@ -84,9 +89,103 @@ app.get(
   exportStudentReport,
 );
 
+/**
+ * Validates JWT token and returns user payload
+ * @param {string} token - JWT token (with or without 'Bearer ' prefix)
+ * @returns {object|null} - Decoded user or null if invalid
+ */
+const validateToken = (token) => {
+  if (!token) return null;
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+
+  try {
+    const cleanToken = token.toLowerCase().startsWith('bearer ')
+      ? token.slice(7).trim()
+      : token.trim();
+
+    const decoded = jwt.verify(cleanToken, secret);
+    return {
+      id: decoded.user_id,
+      roleId: decoded.role_id,
+    };
+  } catch (error) {
+    return null;
+  }
+};
+
 const startServer = async (port = PORT) => {
+  // Create HTTP server for both Express and WebSocket
+  const httpServer = http.createServer(app);
+
+  // Create WebSocket server for GraphQL subscriptions
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql',
+  });
+
+  // Set up WebSocket server with graphql-ws
+  const serverCleanup = useServer(
+    {
+      schema,
+      // Handle WebSocket connection authentication
+      onConnect: async (ctx) => {
+        // Extract token from connectionParams
+        const token = ctx.connectionParams?.Authorization || 
+                      ctx.connectionParams?.authorization ||
+                      ctx.connectionParams?.token;
+
+        if (!token) {
+          throw new Error('Authentication required: Missing token in connectionParams');
+        }
+
+        const user = validateToken(token);
+        if (!user) {
+          throw new Error('Authentication failed: Invalid or expired token');
+        }
+
+        // Return true to accept the connection
+        // User will be available in context via onSubscribe
+        return true;
+      },
+      // Build context for each subscription operation
+      context: async (ctx) => {
+        const token = ctx.connectionParams?.Authorization || 
+                      ctx.connectionParams?.authorization ||
+                      ctx.connectionParams?.token;
+
+        const user = validateToken(token);
+
+        return {
+          token,
+          prisma,
+          user,
+        };
+      },
+      onDisconnect: () => {
+        // Optional: Handle disconnection cleanup
+      },
+    },
+    wsServer,
+  );
+
   const apolloServer = new ApolloServer({
-    schema
+    schema,
+    plugins: [
+      // Proper shutdown for HTTP server
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      // Proper shutdown for WebSocket server
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose();
+            },
+          };
+        },
+      },
+    ],
   });
 
   await apolloServer.start();
@@ -103,20 +202,24 @@ const startServer = async (port = PORT) => {
           ? tokenHeader.slice(7).trim()
           : tokenHeader || null;
         
+        // Manually validate token and extract user (no roleMiddleware)
+        const user = validateToken(token);
+        
         return {
           token,
           prisma,
-          user: req.context?.user,
+          user,
         };
       },
     }),
   );
 
   return new Promise((resolve, reject) => {
-    const server = app.listen(port, () => {
+    const server = httpServer.listen(port, () => {
       // eslint-disable-next-line no-console
       if (process.env.NODE_ENV !== 'test') {
         console.log(`🚀 Server up on: http://localhost:${port}/`);
+        console.log(`🔌 WebSocket subscriptions: ws://localhost:${port}/graphql`);
       }
       resolve(server);
     }).on('error', reject);

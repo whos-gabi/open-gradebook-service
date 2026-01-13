@@ -33,12 +33,19 @@ const studentsResolvers = require('./students/students.resolvers');
 const gradesTypeDefs = fs.readFileSync(path.join(__dirname, 'grades', 'grades.graphql'), 'utf8');
 const gradesResolvers = require('./grades/grades.resolvers');
 
+// 5. Grades Domain (With real-time subscriptions)
+const gradesTypeDefs = loadSchema('./grades/grades.graphql');
+const gradesResolvers = require('./grades/grades.resolvers');
+
 // --- Base Definition (The "Root" types) ---
 const rootTypeDefs = `
   type Query {
     _empty: String
   }
   type Mutation {
+    _empty: String
+  }
+  type Subscription {
     _empty: String
   }
 `;
