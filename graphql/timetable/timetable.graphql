@@ -1,0 +1,14 @@
+type Timetable {
+  id: Int!
+  dayOfWeek: Int!
+  startTime: String!
+  endTime: String!
+  classId: Int!
+  subjectId: Int!
+  subject: Subject
+  class: Class
+}
+
+extend type Query {
+  getTimetable(classId: Int!): [Timetable!]!
+}
