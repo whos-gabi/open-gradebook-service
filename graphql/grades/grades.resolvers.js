@@ -88,6 +88,44 @@ const gradesResolvers = {
         where: { studentId: studentProfile.id },
         include: { subject: true } 
       });
+    },
+
+    getClassGrades: async (_parent, { classId, subjectId }, context) => {
+      const { prisma, user } = context;
+      
+      if (!user || (user.roleId !== ROLES.TEACHER && user.roleId !== ROLES.ADMIN)) {
+        throw new Error('Forbidden: Only teachers or admins can view class grades');
+      }
+
+      // Optional: Check if teacher teaches this class/subject
+      if (user.roleId === ROLES.TEACHER) {
+        const assignment = await prisma.classCourse.findFirst({
+          where: {
+            classId: classId,
+            subjectId: subjectId,
+            teacherId: user.id
+          }
+        });
+        if (!assignment) {
+          throw new Error('Unauthorized: You are not assigned to this class and subject.');
+        }
+      }
+
+      return await prisma.grade.findMany({
+        where: {
+          subjectId: subjectId,
+          student: {
+            classId: classId
+          }
+        },
+        include: {
+          student: {
+            include: { user: true }
+          },
+          subject: true
+        },
+        orderBy: { gradeDate: 'desc' }
+      });
     }
   },
 

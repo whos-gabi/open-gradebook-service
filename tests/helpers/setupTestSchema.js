@@ -14,7 +14,9 @@ let testSchema = originalSchema
   .replace(/@db\.Text/g, '')
   .replace(/@db\.Time/g, '')
   .replace(/@db\.Decimal\(\d+,\s*\d+\)/g, '')
-  .replace(/onDelete: SetNull/g, 'onDelete: Cascade');
+  .replace(/onDelete: SetNull/g, 'onDelete: Cascade')
+  .replace(/BigInt/g, 'Int')
+  .replace(/Decimal/g, 'Float');
 
 // Inject custom output for the client
 if (!testSchema.includes('output =')) {

@@ -30,10 +30,18 @@ const resolvers = {
     // PostgreSQL @db.Time returns Date object with dummy date 1970-01-01.
     // We'll return ISO string or HH:mm:ss. String is safest.
     startTime: (parent) => {
-        return parent.startTime.toISOString ? parent.startTime.toISOString() : parent.startTime;
+      // Dacă e obiect Date, luăm doar ora și minutele
+      if (parent.startTime instanceof Date) {
+        return parent.startTime.toISOString().substring(11, 16); // Returnează "HH:MM"
+        // SAU dacă vrei tot stringul ISO dar fără dată, e complicat, mai bine returnezi HH:MM
+      }
+      return parent.startTime;
     },
     endTime: (parent) => {
-        return parent.endTime.toISOString ? parent.endTime.toISOString() : parent.endTime;
+      if (parent.endTime instanceof Date) {
+        return parent.endTime.toISOString().substring(11, 16); // Returnează "HH:MM"
+      }
+      return parent.endTime;
     }
   }
 };
